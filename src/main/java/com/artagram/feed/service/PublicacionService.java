@@ -1,7 +1,6 @@
 package com.artagram.feed.service;
 
 import com.artagram.feed.common.ApiException;
-import com.artagram.feed.domain.LikeId;
 import com.artagram.feed.domain.LikePublicacion;
 import com.artagram.feed.domain.LikePublicacionRepository;
 import com.artagram.feed.domain.Publicacion;

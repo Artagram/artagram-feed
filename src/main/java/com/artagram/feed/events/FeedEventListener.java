@@ -39,12 +39,12 @@ public class FeedEventListener {
     @Transactional
     public void onUserRegistered(Map<String, Object> payload) {
         try {
-            UUID id = UUID.fromString((String) payload.get("id"));
+            UUID id = UUID.fromString((String) payload.get("usuarioId"));
             String nombreArtista = (String) payload.get("nombreArtista");
             String correo = (String) payload.get("correo");
             Boolean premium = (Boolean) payload.get("premium");
 
-            UsuarioProyeccion usuario = usuarioRepo.findById(id).orElse(new UsuarioProyeccion());
+            UsuarioProyeccion usuario = usuarioRepo.findById(id).orElse(new UsuarioProyeccion(id, nombreArtista, nombreArtista, null, false));
             usuario.setNombreUsuario(nombreArtista);
             usuario.setNombreArtista(nombreArtista);
             usuario.setPremium(Boolean.TRUE.equals(premium));
@@ -62,7 +62,7 @@ public class FeedEventListener {
     @Transactional
     public void onUserDeleted(Map<String, Object> payload) {
         try {
-            UUID id = UUID.fromString((String) payload.get("id"));
+            UUID id = UUID.fromString((String) payload.get("usuarioId"));
             usuarioRepo.deleteById(id);
             log.info("Usuario proyección eliminado en Feed: id={}", id);
         } catch (Exception ex) {

@@ -1,0 +1,14 @@
+name: CI/CD
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  ci-cd:
+    uses: Artagram/artagram-infra/.github/workflows/deploy-service.yml@main
+    with:
+      service-name: artagram-feed
+      container-port: 8083
+    secrets: inherit

@@ -65,6 +65,7 @@ public class AnalisisIa {
 
     public UUID getId() { return id; }
     public Publicacion getPublicacion() { return publicacion; }
+    public void setPublicacion(Publicacion publicacion) { this.publicacion = publicacion; }
     public String getEstado() { return estado; }
     public void setEstado(String estado) { this.estado = estado; }
     public String getDiagnosticoGeneral() { return diagnosticoGeneral; }

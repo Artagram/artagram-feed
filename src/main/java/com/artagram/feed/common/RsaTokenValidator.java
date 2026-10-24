@@ -24,19 +24,24 @@ public class RsaTokenValidator {
 
     private final ResourceLoader resourceLoader;
     private final String publicKeyPath;
+    private final String publicKeyPem;
     private PublicKey publicKey;
 
     public RsaTokenValidator(ResourceLoader resourceLoader,
-                             @Value("${artagram.jwt.public-key-path}") String publicKeyPath) {
+                             @Value("${artagram.jwt.public-key-path}") String publicKeyPath,
+                             @Value("${artagram.jwt.public-key-pem:}") String publicKeyPem) {
         this.resourceLoader = resourceLoader;
         this.publicKeyPath = publicKeyPath;
+        this.publicKeyPem = publicKeyPem;
     }
 
     @PostConstruct
     public void init() {
         try {
             String pem;
-            if (publicKeyPath.startsWith("classpath:")) {
+            if (publicKeyPem != null && !publicKeyPem.isBlank()) {
+                pem = publicKeyPem;
+            } else if (publicKeyPath.startsWith("classpath:")) {
                 Resource resource = resourceLoader.getResource(publicKeyPath);
                 try (InputStream is = resource.getInputStream()) {
                     pem = new String(is.readAllBytes());

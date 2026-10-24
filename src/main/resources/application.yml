@@ -43,6 +43,7 @@ spring:
 artagram:
   jwt:
     public-key-path: ${JWT_PUBLIC_KEY_PATH:../artagram-infra/secrets-dev/jwt-public.pem}
+    public-key-pem: ${JWT_PUBLIC_KEY_PEM:}
     jwks-url: ${JWKS_URL:http://localhost:8081/.well-known/jwks.json}
   storage:
     type: ${STORAGE_TYPE:s3}
