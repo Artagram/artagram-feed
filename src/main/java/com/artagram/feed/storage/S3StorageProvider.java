@@ -13,6 +13,8 @@ import org.springframework.core.io.ByteArrayResource;
 import org.springframework.core.io.Resource;
 import org.springframework.stereotype.Component;
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
+import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
+import software.amazon.awssdk.auth.credentials.DefaultCredentialsProvider;
 import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
 import software.amazon.awssdk.core.ResponseBytes;
 import software.amazon.awssdk.core.sync.RequestBody;
@@ -51,7 +53,9 @@ public class S3StorageProvider implements StorageProvider, AutoCloseable {
             @Value("${artagram.storage.secret-key:minioadmin}") String secretKey,
             @Value("${artagram.storage.path-style-access:true}") boolean pathStyleAccess) {
         this.bucket = bucket;
-        var creds = StaticCredentialsProvider.create(AwsBasicCredentials.create(accessKey, secretKey));
+        AwsCredentialsProvider creds = (accessKey != null && !accessKey.isBlank())
+                ? StaticCredentialsProvider.create(AwsBasicCredentials.create(accessKey, secretKey))
+                : DefaultCredentialsProvider.create();
         var region = Region.of(regionName);
 
         S3ClientBuilder clientBuilder = S3Client.builder()
