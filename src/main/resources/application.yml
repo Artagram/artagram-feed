@@ -27,13 +27,6 @@ spring:
     baseline-on-migrate: true
     locations: classpath:db/migration
 
-  data:
-    redis:
-      host: ${REDIS_HOST:localhost}
-      port: ${REDIS_PORT:6379}
-      database: 1
-      timeout: 2000ms
-
   rabbitmq:
     host: ${RABBITMQ_HOST:localhost}
     port: ${RABBITMQ_PORT:5672}
@@ -44,7 +37,6 @@ artagram:
   jwt:
     public-key-path: ${JWT_PUBLIC_KEY_PATH:../artagram-infra/secrets-dev/jwt-public.pem}
     public-key-pem: ${JWT_PUBLIC_KEY_PEM:}
-    jwks-url: ${JWKS_URL:http://localhost:8081/.well-known/jwks.json}
   storage:
     type: ${STORAGE_TYPE:s3}
     endpoint: ${S3_ENDPOINT:}
