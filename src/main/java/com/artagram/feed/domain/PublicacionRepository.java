@@ -19,6 +19,8 @@ public interface PublicacionRepository extends JpaRepository<Publicacion, UUID> 
     @Query("SELECT DISTINCT p FROM Publicacion p JOIN p.etiquetas e WHERE LOWER(e) = LOWER(:etiqueta) ORDER BY p.creadoEn DESC")
     Page<Publicacion> findByEtiqueta(@Param("etiqueta") String etiqueta, Pageable pageable);
 
+    long countByAutorId(UUID autorId);
+
     Page<Publicacion> findByAutorIdOrderByCreadoEnDesc(UUID autorId, Pageable pageable);
 
     Page<Publicacion> findByAutorIdInOrderByCreadoEnDesc(Collection<UUID> autoresIds, Pageable pageable);

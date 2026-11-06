@@ -34,11 +34,13 @@ public class AnalisisIaController {
     @PostMapping("/api/publicaciones/{id}/analisis")
     public ResponseEntity<AnalisisIaDto> solicitarAnalisis(@PathVariable UUID id, HttpServletRequest request) {
         var usuario = userResolver.resolverRequerido(request);
-        return ResponseEntity.ok(analisisService.solicitarAnalisis(id, usuario.id()));
+        return ResponseEntity.ok(analisisService.solicitarAnalisis(id, usuario.id(), usuario.premium()));
     }
 
     @PostMapping("/api/ia/sugerencias")
-    public ResponseEntity<SugerenciasEtiquetasResponse> sugerirEtiquetas(@Valid @RequestBody SugerenciasEtiquetasRequest req) {
-        return ResponseEntity.ok(analisisService.sugerirEtiquetas(req));
+    public ResponseEntity<SugerenciasEtiquetasResponse> sugerirEtiquetas(@Valid @RequestBody SugerenciasEtiquetasRequest req,
+                                                                         HttpServletRequest request) {
+        var usuario = userResolver.resolverRequerido(request);
+        return ResponseEntity.ok(analisisService.sugerirEtiquetas(req, usuario.id(), usuario.premium()));
     }
 }

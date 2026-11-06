@@ -21,7 +21,8 @@ public class StorageService {
                           @Value("${artagram.storage.bucket:artagram-uploads}") String bucket,
                           @Value("${artagram.storage.type:s3}") String storageType) {
         this.provider = provider;
-        if ("s3".equalsIgnoreCase(storageType)) {
+        // En AWS no se configura endpoint: las imagenes se sirven por /media/ desde este servicio.
+        if ("s3".equalsIgnoreCase(storageType) && s3Endpoint != null && !s3Endpoint.isBlank()) {
             this.publicPrefix = s3Endpoint + "/" + bucket + "/";
         } else {
             this.publicPrefix = "/media/";

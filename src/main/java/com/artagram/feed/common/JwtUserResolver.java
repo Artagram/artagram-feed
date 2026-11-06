@@ -19,29 +19,35 @@ public class JwtUserResolver {
     }
 
     public Optional<UsuarioAutenticado> resolverOpcional(HttpServletRequest request) {
-        String headerUserId = request.getHeader("X-User-Id");
-        if (headerUserId != null && !headerUserId.isBlank()) {
-            String roles = request.getHeader("X-User-Roles");
-            String nombre = request.getHeader("X-User-Nombre");
-            if (nombre == null) nombre = "artista";
-            return Optional.of(new UsuarioAutenticado(UUID.fromString(headerUserId), nombre, null, roles, false));
-        }
+        return desdeToken(request).or(() -> desdeCabeceras(request));
+    }
 
+    /** Va primero: el gateway reenvia el token y solo ahi viene el claim premium. */
+    private Optional<UsuarioAutenticado> desdeToken(HttpServletRequest request) {
         String authHeader = request.getHeader("Authorization");
-        if (authHeader != null && authHeader.startsWith("Bearer ")) {
-            String token = authHeader.substring(7);
-            try {
-                Claims claims = validator.validarYExtraer(token);
-                UUID id = UUID.fromString(claims.getSubject());
-                String nombre = claims.get("nombre", String.class);
-                String roles = claims.get("roles", String.class);
-                Boolean premium = claims.get("premium", Boolean.class);
-                return Optional.of(new UsuarioAutenticado(id, nombre != null ? nombre : "artista", claims.get("email", String.class), roles, Boolean.TRUE.equals(premium)));
-            } catch (Exception ignored) {
-                return Optional.empty();
-            }
+        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+            return Optional.empty();
         }
-        return Optional.empty();
+        try {
+            Claims claims = validator.validarYExtraer(authHeader.substring(7));
+            UUID id = UUID.fromString(claims.getSubject());
+            String nombre = claims.get("nombre", String.class);
+            String rol = claims.get("rol", String.class);
+            Boolean premium = claims.get("premium", Boolean.class);
+            return Optional.of(new UsuarioAutenticado(id, nombre != null ? nombre : "artista", claims.get("email", String.class), rol, Boolean.TRUE.equals(premium)));
+        } catch (Exception ignored) {
+            return Optional.empty();
+        }
+    }
+
+    private Optional<UsuarioAutenticado> desdeCabeceras(HttpServletRequest request) {
+        String headerUserId = request.getHeader("X-User-Id");
+        if (headerUserId == null || headerUserId.isBlank()) {
+            return Optional.empty();
+        }
+        String nombre = request.getHeader("X-User-Name");
+        return Optional.of(new UsuarioAutenticado(UUID.fromString(headerUserId), nombre != null ? nombre : "artista",
+                null, request.getHeader("X-User-Role"), false));
     }
 
     public UsuarioAutenticado resolverRequerido(HttpServletRequest request) {

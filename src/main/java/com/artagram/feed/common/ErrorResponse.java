@@ -3,12 +3,12 @@ package com.artagram.feed.common;
 import java.time.Instant;
 
 public record ErrorResponse(
-        String codigo,
-        String mensaje,
+        String code,
+        String message,
         Instant timestamp,
         String traceId
 ) {
-    public ErrorResponse(String codigo, String mensaje, String traceId) {
-        this(codigo, mensaje, Instant.now(), traceId);
+    public ErrorResponse(String code, String message, String traceId) {
+        this(code, message, Instant.now(), traceId);
     }
 }

@@ -21,13 +21,16 @@ public class AnalisisIaService {
     private final AnalisisIaRepository analisisRepo;
     private final PublicacionRepository publicacionRepo;
     private final FeedEventPublisher eventPublisher;
+    private final PlanService planService;
 
     public AnalisisIaService(AnalisisIaRepository analisisRepo,
                              PublicacionRepository publicacionRepo,
-                             FeedEventPublisher eventPublisher) {
+                             FeedEventPublisher eventPublisher,
+                             PlanService planService) {
         this.analisisRepo = analisisRepo;
         this.publicacionRepo = publicacionRepo;
         this.eventPublisher = eventPublisher;
+        this.planService = planService;
     }
 
     public AnalisisIaDto obtenerAnalisis(UUID publicacionId) {
@@ -37,9 +40,10 @@ public class AnalisisIaService {
     }
 
     @Transactional
-    public AnalisisIaDto solicitarAnalisis(UUID publicacionId, UUID usuarioId) {
+    public AnalisisIaDto solicitarAnalisis(UUID publicacionId, UUID usuarioId, boolean premium) {
         Publicacion p = publicacionRepo.findById(publicacionId)
                 .orElseThrow(() -> ApiException.notFound("PUBLICACION_NO_ENCONTRADA", "La publicación no existe"));
+        planService.consumirIa(usuarioId, premium);
 
         AnalisisIa pendiente = analisisRepo.findTopByPublicacionIdOrderByCreadoEnDesc(publicacionId)
                 .orElse(new AnalisisIa());
@@ -53,7 +57,8 @@ public class AnalisisIaService {
         return aDto(pendiente);
     }
 
-    public SugerenciasEtiquetasResponse sugerirEtiquetas(SugerenciasEtiquetasRequest req) {
+    public SugerenciasEtiquetasResponse sugerirEtiquetas(SugerenciasEtiquetasRequest req, UUID usuarioId, boolean premium) {
+        planService.consumirIa(usuarioId, premium);
         String base = (req.tituloBorrador() != null ? req.tituloBorrador() : "").toLowerCase();
         List<String> tags;
         if (base.contains("acuarela") || base.contains("jardin")) {
