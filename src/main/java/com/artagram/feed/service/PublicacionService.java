@@ -260,6 +260,11 @@ public class PublicacionService {
         return new FeedResponse(dtos, null, null, posts.hasNext(), List.of("arte", "acuarela", "digital"));
     }
 
+    /** Se muestra la version con marca; el original solo aparece mientras se procesa. */
+    public String urlImagen(Publicacion p) {
+        return storageService.resolverUrlPublica(p.getMarcaAguaRuta() != null ? p.getMarcaAguaRuta() : p.getImagenUrl());
+    }
+
     public PublicacionDto aDto(Publicacion p, UUID usuarioActualId) {
         List<String> versiones = versionRepo.findByPublicacionIdOrderByNumeroVersionAsc(p.getId()).stream()
                 .map(v -> storageService.resolverUrlPublica(v.getImagenUrl()))
@@ -279,7 +284,7 @@ public class PublicacionService {
                 autorNombre,
                 p.getTitulo(),
                 p.getDescripcion(),
-                storageService.resolverUrlPublica(p.getImagenUrl()),
+                urlImagen(p),
                 versiones,
                 new ArrayList<>(p.getEtiquetas()),
                 p.getContadorLikes(),

@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -104,7 +105,7 @@ class PublicacionServiceTest {
     private Publicacion obraDe(UUID autorId) {
         UsuarioProyeccion autor = new UsuarioProyeccion(autorId, "lucia", "Lucía", null, false);
         Publicacion p = new Publicacion(UUID.randomUUID(), autor, "Obra", null, null, "o.jpg", Set.of());
-        when(publicacionRepo.findById(p.getId())).thenReturn(Optional.of(p));
+        lenient().when(publicacionRepo.findById(p.getId())).thenReturn(Optional.of(p));
         return p;
     }
 
@@ -169,5 +170,16 @@ class PublicacionServiceTest {
                 .isInstanceOfSatisfying(ApiException.class, e -> assertThat(e.getCodigo()).isEqualTo("MARCA_EN_PROCESO"));
         verify(eventPublisher).publicarPostPublicado(p.getId(), p.getAutor().getId(), p.getAutor().getNombreArtista(), "Obra", "o.jpg");
         verify(storageService, never()).urlDescarga(any(), any());
+    }
+
+    @Test
+    void elFeedMuestraLaVersionMarcadaCuandoYaExiste() {
+        Publicacion p = obraDe(UUID.randomUUID());
+        when(storageService.resolverUrlPublica(any())).thenAnswer(inv -> "/media/" + inv.getArgument(0));
+
+        assertThat(service.aDto(p, null).obraFinalUrl()).isEqualTo("/media/o.jpg");
+
+        p.setMarcaAguaRuta("marcadas/x.jpg");
+        assertThat(service.aDto(p, null).obraFinalUrl()).isEqualTo("/media/marcadas/x.jpg");
     }
 }
