@@ -219,6 +219,7 @@ public class PublicacionService {
 
         boolean yaDioLike = likeRepo.existsById_PublicacionIdAndId_UsuarioId(publicacionId, usuarioId);
         boolean nuevoEstadoMeGusta;
+        String usuarioNombre = null;
 
         if (yaDioLike) {
             likeRepo.deleteById_PublicacionIdAndId_UsuarioId(publicacionId, usuarioId);
@@ -228,12 +229,13 @@ public class PublicacionService {
             UsuarioProyeccion u = usuarioRepo.findById(usuarioId)
                     .orElseGet(() -> usuarioRepo.save(new UsuarioProyeccion(usuarioId, "artista_" + usuarioId.toString().substring(0, 6), "Artista", null, false)));
             likeRepo.save(new LikePublicacion(p, u));
+            usuarioNombre = u.getNombreArtista();
             p.setContadorLikes(p.getContadorLikes() + 1);
             nuevoEstadoMeGusta = true;
         }
 
         publicacionRepo.save(p);
-        eventPublisher.publicarLikeModificado(publicacionId, usuarioId, p.getAutor().getId(), p.getContadorLikes(), nuevoEstadoMeGusta);
+        eventPublisher.publicarLikeModificado(publicacionId, usuarioId, usuarioNombre, p.getAutor().getId(), p.getContadorLikes(), nuevoEstadoMeGusta);
 
         return new LikeResponse(nuevoEstadoMeGusta, p.getContadorLikes());
     }

@@ -99,7 +99,7 @@ class PublicacionServiceTest {
 
         assertThat(res.meGusta()).isTrue();
         assertThat(res.contadorLikes()).isEqualTo(6);
-        verify(eventPublisher).publicarLikeModificado(pubId, usuarioId, autor.getId(), 6, true);
+        verify(eventPublisher).publicarLikeModificado(pubId, usuarioId, "Liker", autor.getId(), 6, true);
     }
 
     private Publicacion obraDe(UUID autorId) {

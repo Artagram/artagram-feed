@@ -46,11 +46,12 @@ public class FeedEventPublisher {
         rabbitTemplate.convertAndSend(FeedRabbitMqConfig.EXCHANGE, "post.moderated", evento);
     }
 
-    public void publicarLikeModificado(UUID publicacionId, UUID usuarioId, UUID autorId, int contadorLikes, boolean meGusta) {
+    public void publicarLikeModificado(UUID publicacionId, UUID usuarioId, String usuarioNombre, UUID autorId, int contadorLikes, boolean meGusta) {
         Map<String, Object> evento = Map.of(
                 "tipo", "LIKES_ACTUALIZADOS",
                 "publicacionId", publicacionId.toString(),
                 "usuarioId", usuarioId.toString(),
+                "usuarioNombre", usuarioNombre != null ? usuarioNombre : "Un artista",
                 "autorId", autorId.toString(),
                 "contadorLikes", contadorLikes,
                 "meGusta", meGusta,
