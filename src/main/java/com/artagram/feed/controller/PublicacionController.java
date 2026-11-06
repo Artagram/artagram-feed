@@ -89,6 +89,34 @@ public class PublicacionController {
         return ResponseEntity.noContent().build();
     }
 
+    @GetMapping("/artista/{autorId}")
+    public ResponseEntity<Page<PublicacionDto>> listarPorArtista(
+            @PathVariable UUID autorId,
+            @RequestParam(defaultValue = "0") int pagina,
+            @RequestParam(defaultValue = "12") int tamano,
+            HttpServletRequest request) {
+        UUID usuarioId = userResolver.resolverOpcional(request).map(JwtUserResolver.UsuarioAutenticado::id).orElse(null);
+        return ResponseEntity.ok(publicacionService.listarPorArtista(autorId, pagina, tamano, usuarioId));
+    }
+
+    @GetMapping("/artista/{autorId}/destacadas")
+    public ResponseEntity<List<PublicacionDto>> destacadas(@PathVariable UUID autorId, HttpServletRequest request) {
+        UUID usuarioId = userResolver.resolverOpcional(request).map(JwtUserResolver.UsuarioAutenticado::id).orElse(null);
+        return ResponseEntity.ok(publicacionService.listarDestacadas(autorId, usuarioId));
+    }
+
+    @PutMapping("/{id}/destacar")
+    public ResponseEntity<PublicacionDto> destacar(@PathVariable UUID id, HttpServletRequest request) {
+        var usuario = userResolver.resolverRequerido(request);
+        return ResponseEntity.ok(publicacionService.destacar(id, usuario.id(), usuario.premium()));
+    }
+
+    @DeleteMapping("/{id}/destacar")
+    public ResponseEntity<PublicacionDto> quitarDestacada(@PathVariable UUID id, HttpServletRequest request) {
+        var usuario = userResolver.resolverRequerido(request);
+        return ResponseEntity.ok(publicacionService.quitarDestacada(id, usuario.id()));
+    }
+
     @PostMapping("/{id}/like")
     public ResponseEntity<LikeResponse> toggleLike(@PathVariable UUID id, HttpServletRequest request) {
         var usuario = userResolver.resolverRequerido(request);

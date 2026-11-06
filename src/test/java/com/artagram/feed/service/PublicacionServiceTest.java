@@ -3,6 +3,9 @@ package com.artagram.feed.service;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -46,12 +49,14 @@ class PublicacionServiceTest {
     private StorageService storageService;
     @Mock
     private FeedEventPublisher eventPublisher;
+    @Mock
+    private PlanService planService;
 
     private PublicacionService service;
 
     @BeforeEach
     void setUp() {
-        service = new PublicacionService(publicacionRepo, versionRepo, likeRepo, usuarioRepo, seguidorRepo, storageService, eventPublisher);
+        service = new PublicacionService(publicacionRepo, versionRepo, likeRepo, usuarioRepo, seguidorRepo, storageService, eventPublisher, planService);
     }
 
     @Test
@@ -94,5 +99,55 @@ class PublicacionServiceTest {
         assertThat(res.meGusta()).isTrue();
         assertThat(res.contadorLikes()).isEqualTo(6);
         verify(eventPublisher).publicarLikeModificado(pubId, usuarioId, autor.getId(), 6, true);
+    }
+
+    private Publicacion obraDe(UUID autorId) {
+        UsuarioProyeccion autor = new UsuarioProyeccion(autorId, "lucia", "Lucía", null, false);
+        Publicacion p = new Publicacion(UUID.randomUUID(), autor, "Obra", null, null, "o.jpg", Set.of());
+        when(publicacionRepo.findById(p.getId())).thenReturn(Optional.of(p));
+        return p;
+    }
+
+    @Test
+    void elAutorDestacaYQuitaSuObra() {
+        UUID autorId = UUID.randomUUID();
+        Publicacion p = obraDe(autorId);
+        when(publicacionRepo.save(p)).thenReturn(p);
+
+        assertThat(service.destacar(p.getId(), autorId, false).destacada()).isTrue();
+        verify(planService).verificarCupoDestacadas(autorId, false);
+
+        assertThat(service.quitarDestacada(p.getId(), autorId).destacada()).isFalse();
+    }
+
+    @Test
+    void volverADestacarNoGastaCupo() {
+        UUID autorId = UUID.randomUUID();
+        Publicacion p = obraDe(autorId);
+        p.destacar();
+
+        assertThat(service.destacar(p.getId(), autorId, false).destacada()).isTrue();
+        verify(planService, never()).verificarCupoDestacadas(any(), anyBoolean());
+    }
+
+    @Test
+    void sinCupoLaObraNoQuedaDestacada() {
+        UUID autorId = UUID.randomUUID();
+        Publicacion p = obraDe(autorId);
+        doThrow(ApiException.forbidden("PLAN_LIMITE", "tope")).when(planService).verificarCupoDestacadas(autorId, false);
+
+        assertThatThrownBy(() -> service.destacar(p.getId(), autorId, false)).isInstanceOf(ApiException.class);
+        assertThat(p.isDestacada()).isFalse();
+    }
+
+    @Test
+    void nadieMasPuedeDestacarObrasAjenas() {
+        Publicacion p = obraDe(UUID.randomUUID());
+        UUID otro = UUID.randomUUID();
+
+        assertThatThrownBy(() -> service.destacar(p.getId(), otro, true))
+                .isInstanceOfSatisfying(ApiException.class, e -> assertThat(e.getCodigo()).isEqualTo("SIN_PERMISO"));
+        assertThatThrownBy(() -> service.quitarDestacada(p.getId(), otro)).isInstanceOf(ApiException.class);
+        assertThat(p.isDestacada()).isFalse();
     }
 }

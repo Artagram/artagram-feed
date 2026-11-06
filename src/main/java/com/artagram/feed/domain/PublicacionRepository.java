@@ -1,6 +1,7 @@
 package com.artagram.feed.domain;
 
 import java.util.Collection;
+import java.util.List;
 import java.util.UUID;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -20,6 +21,10 @@ public interface PublicacionRepository extends JpaRepository<Publicacion, UUID> 
     Page<Publicacion> findByEtiqueta(@Param("etiqueta") String etiqueta, Pageable pageable);
 
     long countByAutorId(UUID autorId);
+
+    long countByAutorIdAndDestacadaTrue(UUID autorId);
+
+    List<Publicacion> findByAutorIdAndDestacadaTrueOrderByDestacadaEnDesc(UUID autorId);
 
     Page<Publicacion> findByAutorIdOrderByCreadoEnDesc(UUID autorId, Pageable pageable);
 

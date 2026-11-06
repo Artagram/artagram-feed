@@ -40,6 +40,7 @@ public class PublicacionService {
     private final SeguidorProyeccionRepository seguidorRepo;
     private final StorageService storageService;
     private final FeedEventPublisher eventPublisher;
+    private final PlanService planService;
 
     public PublicacionService(PublicacionRepository publicacionRepo,
                               VersionPublicacionRepository versionRepo,
@@ -47,7 +48,8 @@ public class PublicacionService {
                               UsuarioProyeccionRepository usuarioRepo,
                               SeguidorProyeccionRepository seguidorRepo,
                               StorageService storageService,
-                              FeedEventPublisher eventPublisher) {
+                              FeedEventPublisher eventPublisher,
+                              PlanService planService) {
         this.publicacionRepo = publicacionRepo;
         this.versionRepo = versionRepo;
         this.likeRepo = likeRepo;
@@ -55,6 +57,7 @@ public class PublicacionService {
         this.seguidorRepo = seguidorRepo;
         this.storageService = storageService;
         this.eventPublisher = eventPublisher;
+        this.planService = planService;
     }
 
     public Page<PublicacionDto> listar(String tag, String orden, String busqueda, int pagina, int tamano, UUID usuarioActualId) {
@@ -136,6 +139,47 @@ public class PublicacionService {
         publicacionRepo.delete(p);
     }
 
+    public Page<PublicacionDto> listarPorArtista(UUID autorId, int pagina, int tamano, UUID usuarioActualId) {
+        return publicacionRepo.findByAutorIdOrderByCreadoEnDesc(autorId, PageRequest.of(pagina, tamano))
+                .map(p -> aDto(p, usuarioActualId));
+    }
+
+    public List<PublicacionDto> listarDestacadas(UUID autorId, UUID usuarioActualId) {
+        return publicacionRepo.findByAutorIdAndDestacadaTrueOrderByDestacadaEnDesc(autorId).stream()
+                .map(p -> aDto(p, usuarioActualId))
+                .toList();
+    }
+
+    @Transactional
+    public PublicacionDto destacar(UUID publicacionId, UUID usuarioId, boolean premium) {
+        Publicacion p = buscarPropia(publicacionId, usuarioId);
+        if (!p.isDestacada()) {
+            planService.verificarCupoDestacadas(usuarioId, premium);
+            p.destacar();
+            p = publicacionRepo.save(p);
+        }
+        return aDto(p, usuarioId);
+    }
+
+    @Transactional
+    public PublicacionDto quitarDestacada(UUID publicacionId, UUID usuarioId) {
+        Publicacion p = buscarPropia(publicacionId, usuarioId);
+        if (p.isDestacada()) {
+            p.quitarDestacada();
+            p = publicacionRepo.save(p);
+        }
+        return aDto(p, usuarioId);
+    }
+
+    private Publicacion buscarPropia(UUID publicacionId, UUID usuarioId) {
+        Publicacion p = publicacionRepo.findById(publicacionId)
+                .orElseThrow(() -> ApiException.notFound("PUBLICACION_NO_ENCONTRADA", "La publicación no existe"));
+        if (!p.getAutor().getId().equals(usuarioId)) {
+            throw ApiException.forbidden("SIN_PERMISO", "Solo el autor puede destacar esta obra");
+        }
+        return p;
+    }
+
     @Transactional
     public LikeResponse toggleLike(UUID publicacionId, UUID usuarioId) {
         Publicacion p = publicacionRepo.findById(publicacionId)
@@ -160,6 +204,14 @@ public class PublicacionService {
         eventPublisher.publicarLikeModificado(publicacionId, usuarioId, p.getAutor().getId(), p.getContadorLikes(), nuevoEstadoMeGusta);
 
         return new LikeResponse(nuevoEstadoMeGusta, p.getContadorLikes());
+    }
+
+    public FeedResponse feedReciente(UUID usuarioActualId, int pagina, int tamano) {
+        Page<Publicacion> posts = publicacionRepo.findAllByOrderByCreadoEnDesc(PageRequest.of(pagina, tamano));
+        List<PublicacionDto> dtos = posts.getContent().stream()
+                .map(p -> aDto(p, usuarioActualId))
+                .toList();
+        return new FeedResponse(dtos, null, null, posts.hasNext(), Collections.emptyList());
     }
 
     public FeedResponse feedSiguiendo(UUID usuarioId, int pagina, int tamano) {
@@ -214,7 +266,8 @@ public class PublicacionService {
                 p.getCreadoEn().toString(),
                 p.getContadorComentarios(),
                 p.getVersion(),
-                p.getActualizadoEn() != null ? p.getActualizadoEn().toString() : null
+                p.getActualizadoEn() != null ? p.getActualizadoEn().toString() : null,
+                p.isDestacada()
         );
     }
 }

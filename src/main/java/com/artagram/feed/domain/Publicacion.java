@@ -53,6 +53,12 @@ public class Publicacion {
     @Column(name = "contador_vistas", nullable = false)
     private int contadorVistas = 0;
 
+    @Column(nullable = false)
+    private boolean destacada = false;
+
+    @Column(name = "destacada_en")
+    private Instant destacadaEn;
+
     @Version
     @Column(nullable = false)
     private int version;
@@ -104,6 +110,18 @@ public class Publicacion {
     public void setContadorComentarios(int contadorComentarios) { this.contadorComentarios = Math.max(0, contadorComentarios); }
     public int getContadorVistas() { return contadorVistas; }
     public void setContadorVistas(int contadorVistas) { this.contadorVistas = contadorVistas; }
+    public boolean isDestacada() { return destacada; }
+
+    public void destacar() {
+        this.destacada = true;
+        this.destacadaEn = Instant.now();
+    }
+
+    public void quitarDestacada() {
+        this.destacada = false;
+        this.destacadaEn = null;
+    }
+
     public int getVersion() { return version; }
     public Instant getCreadoEn() { return creadoEn; }
     public Instant getActualizadoEn() { return actualizadoEn; }

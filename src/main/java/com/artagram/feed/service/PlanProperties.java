@@ -12,6 +12,8 @@ public class PlanProperties {
     private int publicacionesPro = 500;
     private int imagenMbGratis = 10;
     private int imagenMbPro = 25;
+    private int destacadasGratis = 3;
+    private int destacadasPro = 10;
 
     public int getIaGratisPorMes() { return iaGratisPorMes; }
     public void setIaGratisPorMes(int iaGratisPorMes) { this.iaGratisPorMes = iaGratisPorMes; }
@@ -23,4 +25,8 @@ public class PlanProperties {
     public void setImagenMbGratis(int imagenMbGratis) { this.imagenMbGratis = imagenMbGratis; }
     public int getImagenMbPro() { return imagenMbPro; }
     public void setImagenMbPro(int imagenMbPro) { this.imagenMbPro = imagenMbPro; }
+    public int getDestacadasGratis() { return destacadasGratis; }
+    public void setDestacadasGratis(int destacadasGratis) { this.destacadasGratis = destacadasGratis; }
+    public int getDestacadasPro() { return destacadasPro; }
+    public void setDestacadasPro(int destacadasPro) { this.destacadasPro = destacadasPro; }
 }

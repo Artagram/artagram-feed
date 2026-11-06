@@ -62,6 +62,25 @@ class PlanServiceTest {
     }
 
     @Test
+    void destacadasGratisHastaTres() {
+        when(publicaciones.countByAutorIdAndDestacadaTrue(usuarioId)).thenReturn(2L);
+        assertThatCode(() -> service.verificarCupoDestacadas(usuarioId, false)).doesNotThrowAnyException();
+
+        when(publicaciones.countByAutorIdAndDestacadaTrue(usuarioId)).thenReturn(3L);
+        esLimiteDePlan(() -> service.verificarCupoDestacadas(usuarioId, false));
+    }
+
+    @Test
+    void destacadasProHastaDiezSinOfrecerMejora() {
+        when(publicaciones.countByAutorIdAndDestacadaTrue(usuarioId)).thenReturn(9L);
+        assertThatCode(() -> service.verificarCupoDestacadas(usuarioId, true)).doesNotThrowAnyException();
+
+        when(publicaciones.countByAutorIdAndDestacadaTrue(usuarioId)).thenReturn(10L);
+        assertThatThrownBy(() -> service.verificarCupoDestacadas(usuarioId, true))
+                .isInstanceOfSatisfying(ApiException.class, e -> assertThat(e.getCodigo()).isEqualTo("TOPE_DESTACADAS"));
+    }
+
+    @Test
     void tamanoGratisHastaDiezMegas() {
         assertThatCode(() -> service.verificarTamanoImagen(10 * MB, false)).doesNotThrowAnyException();
         esLimiteDePlan(() -> service.verificarTamanoImagen(10 * MB + 1, false));

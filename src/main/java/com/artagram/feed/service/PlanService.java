@@ -37,6 +37,18 @@ public class PlanService {
                 + " obras del plan gratis. Pasate a PRO para publicar hasta " + limites.getPublicacionesPro());
     }
 
+    public void verificarCupoDestacadas(UUID autorId, boolean premium) {
+        int limite = premium ? limites.getDestacadasPro() : limites.getDestacadasGratis();
+        if (publicacionRepo.countByAutorIdAndDestacadaTrue(autorId) < limite) {
+            return;
+        }
+        if (premium) {
+            throw ApiException.forbidden("TOPE_DESTACADAS", "Puedes destacar hasta " + limite + " obras. Quita una para destacar otra");
+        }
+        throw ApiException.forbidden(CODIGO, "El plan gratis permite destacar " + limite
+                + " obras. Quita una o pasate a PRO para destacar hasta " + limites.getDestacadasPro());
+    }
+
     public void verificarTamanoImagen(long bytes, boolean premium) {
         int limiteMb = premium ? limites.getImagenMbPro() : limites.getImagenMbGratis();
         if (bytes <= limiteMb * 1024L * 1024L) {
