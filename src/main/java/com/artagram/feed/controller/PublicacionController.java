@@ -1,6 +1,7 @@
 package com.artagram.feed.controller;
 
 import com.artagram.feed.common.JwtUserResolver;
+import com.artagram.feed.dto.DescargaResponse;
 import com.artagram.feed.dto.EditarPublicacionRequest;
 import com.artagram.feed.dto.LikeResponse;
 import com.artagram.feed.dto.PublicacionDto;
@@ -103,6 +104,12 @@ public class PublicacionController {
     public ResponseEntity<List<PublicacionDto>> destacadas(@PathVariable UUID autorId, HttpServletRequest request) {
         UUID usuarioId = userResolver.resolverOpcional(request).map(JwtUserResolver.UsuarioAutenticado::id).orElse(null);
         return ResponseEntity.ok(publicacionService.listarDestacadas(autorId, usuarioId));
+    }
+
+    @GetMapping("/{id}/descargar")
+    public ResponseEntity<DescargaResponse> descargar(@PathVariable UUID id, HttpServletRequest request) {
+        userResolver.resolverRequerido(request);
+        return ResponseEntity.ok(publicacionService.urlDescarga(id));
     }
 
     @PutMapping("/{id}/destacar")

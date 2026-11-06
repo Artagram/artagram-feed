@@ -44,6 +44,9 @@ public class Publicacion {
     @Column(length = 100)
     private String blurhash;
 
+    @Column(name = "marca_agua_ruta", length = 500)
+    private String marcaAguaRuta;
+
     @Column(name = "contador_likes", nullable = false)
     private int contadorLikes = 0;
 
@@ -104,6 +107,8 @@ public class Publicacion {
     public void setMiniaturaUrl(String miniaturaUrl) { this.miniaturaUrl = miniaturaUrl; }
     public String getBlurhash() { return blurhash; }
     public void setBlurhash(String blurhash) { this.blurhash = blurhash; }
+    public String getMarcaAguaRuta() { return marcaAguaRuta; }
+    public void setMarcaAguaRuta(String marcaAguaRuta) { this.marcaAguaRuta = marcaAguaRuta; }
     public int getContadorLikes() { return contadorLikes; }
     public void setContadorLikes(int contadorLikes) { this.contadorLikes = Math.max(0, contadorLikes); }
     public int getContadorComentarios() { return contadorComentarios; }

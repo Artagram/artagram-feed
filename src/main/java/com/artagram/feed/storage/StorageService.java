@@ -72,6 +72,11 @@ public class StorageService {
         return new PresignResponse(uploadUrl, publicUrl, key);
     }
 
+    public String urlDescarga(String ruta, String nombreArchivo) {
+        return provider.urlPrefirmadaDescarga(ruta, nombreArchivo, Duration.ofMinutes(5))
+                .orElseGet(() -> resolverUrlPublica(ruta));
+    }
+
     public String resolverUrlPublica(String ruta) {
         if (ruta == null || ruta.isBlank()) return null;
         if (ruta.startsWith("http://") || ruta.startsWith("https://")) {

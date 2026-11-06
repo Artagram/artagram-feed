@@ -156,6 +156,19 @@ public class S3StorageProvider implements StorageProvider, AutoCloseable {
     }
 
     @Override
+    public Optional<String> urlPrefirmadaDescarga(String ruta, String nombreArchivo, Duration ttl) {
+        GetObjectPresignRequest gopr = GetObjectPresignRequest.builder()
+                .signatureDuration(ttl)
+                .getObjectRequest(GetObjectRequest.builder()
+                        .bucket(bucket)
+                        .key(limpiarClave(ruta))
+                        .responseContentDisposition("attachment; filename=\"" + nombreArchivo + "\"")
+                        .build())
+                .build();
+        return Optional.of(s3Presigner.presignGetObject(gopr).url().toString());
+    }
+
+    @Override
     public Optional<String> urlPrefirmadaLectura(String ruta, Duration ttl) {
         GetObjectPresignRequest gopr = GetObjectPresignRequest.builder()
                 .signatureDuration(ttl)

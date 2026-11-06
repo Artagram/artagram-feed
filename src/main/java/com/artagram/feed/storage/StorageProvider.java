@@ -20,6 +20,10 @@ public interface StorageProvider {
         return Optional.empty();
     }
 
+    default Optional<String> urlPrefirmadaDescarga(String ruta, String nombreArchivo, Duration ttl) {
+        return Optional.empty();
+    }
+
     default Optional<String> urlPrefirmadaLectura(String ruta, Duration ttl) {
         return Optional.empty();
     }

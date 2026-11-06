@@ -105,10 +105,12 @@ public class FeedEventListener {
             UUID publicacionId = UUID.fromString((String) payload.get("publicacionId"));
             String miniaturaUrl = (String) payload.get("miniaturaUrl");
             String blurhash = (String) payload.get("blurhash");
+            String marcaAguaRuta = (String) payload.get("marcaAguaRuta");
 
             publicacionRepo.findById(publicacionId).ifPresent(pub -> {
                 if (miniaturaUrl != null) pub.setMiniaturaUrl(miniaturaUrl);
                 if (blurhash != null) pub.setBlurhash(blurhash);
+                if (marcaAguaRuta != null) pub.setMarcaAguaRuta(marcaAguaRuta);
                 publicacionRepo.save(pub);
                 log.info("Publicación {} enriquecida con miniatura y blurhash por media worker", publicacionId);
             });

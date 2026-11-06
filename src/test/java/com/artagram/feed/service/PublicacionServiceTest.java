@@ -78,7 +78,7 @@ class PublicacionServiceTest {
         assertThat(dto).isNotNull();
         assertThat(dto.titulo()).isEqualTo("Mi Acuarela");
         assertThat(dto.autorNombre()).isEqualTo("Lucía Mora");
-        verify(eventPublisher).publicarPostPublicado(any(), any(), any(), any());
+        verify(eventPublisher).publicarPostPublicado(any(), any(), any(), any(), any());
     }
 
     @Test
@@ -149,5 +149,25 @@ class PublicacionServiceTest {
                 .isInstanceOfSatisfying(ApiException.class, e -> assertThat(e.getCodigo()).isEqualTo("SIN_PERMISO"));
         assertThatThrownBy(() -> service.quitarDestacada(p.getId(), otro)).isInstanceOf(ApiException.class);
         assertThat(p.isDestacada()).isFalse();
+    }
+
+    @Test
+    void laDescargaEntregaSoloLaVersionMarcada() {
+        Publicacion p = obraDe(UUID.randomUUID());
+        p.setTitulo("Atardecer en Cañón!");
+        p.setMarcaAguaRuta("marcadas/x.jpg");
+        when(storageService.urlDescarga("marcadas/x.jpg", "atardecer-en-canon-artagram.jpg")).thenReturn("https://s3/firmada");
+
+        assertThat(service.urlDescarga(p.getId()).url()).isEqualTo("https://s3/firmada");
+    }
+
+    @Test
+    void unaObraSinMarcaSeProcesaYNuncaEntregaElOriginal() {
+        Publicacion p = obraDe(UUID.randomUUID());
+
+        assertThatThrownBy(() -> service.urlDescarga(p.getId()))
+                .isInstanceOfSatisfying(ApiException.class, e -> assertThat(e.getCodigo()).isEqualTo("MARCA_EN_PROCESO"));
+        verify(eventPublisher).publicarPostPublicado(p.getId(), p.getAutor().getId(), p.getAutor().getNombreArtista(), "Obra", "o.jpg");
+        verify(storageService, never()).urlDescarga(any(), any());
     }
 }

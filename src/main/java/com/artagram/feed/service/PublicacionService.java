@@ -11,17 +11,20 @@ import com.artagram.feed.domain.UsuarioProyeccionRepository;
 import com.artagram.feed.domain.VersionPublicacion;
 import com.artagram.feed.domain.VersionPublicacionRepository;
 import com.artagram.feed.dto.CrearPublicacionRequest;
+import com.artagram.feed.dto.DescargaResponse;
 import com.artagram.feed.dto.EditarPublicacionRequest;
 import com.artagram.feed.dto.FeedResponse;
 import com.artagram.feed.dto.LikeResponse;
 import com.artagram.feed.dto.PublicacionDto;
 import com.artagram.feed.events.FeedEventPublisher;
 import com.artagram.feed.storage.StorageService;
+import java.text.Normalizer;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Set;
 import java.util.UUID;
 import org.springframework.data.domain.Page;
@@ -102,7 +105,7 @@ public class PublicacionService {
             }
         }
 
-        eventPublisher.publicarPostPublicado(p.getId(), autor.getId(), p.getTitulo(), p.getImagenUrl());
+        eventPublisher.publicarPostPublicado(p.getId(), autor.getId(), autor.getNombreArtista(), p.getTitulo(), p.getImagenUrl());
         return aDto(p, autorId);
     }
 
@@ -137,6 +140,24 @@ public class PublicacionService {
         }
 
         publicacionRepo.delete(p);
+    }
+
+    /** Solo entrega la version marcada. Las obras que aun no la tienen se mandan a procesar. */
+    @Transactional(readOnly = true)
+    public DescargaResponse urlDescarga(UUID publicacionId) {
+        Publicacion p = publicacionRepo.findById(publicacionId)
+                .orElseThrow(() -> ApiException.notFound("PUBLICACION_NO_ENCONTRADA", "La publicación no existe"));
+        if (p.getMarcaAguaRuta() == null) {
+            eventPublisher.publicarPostPublicado(p.getId(), p.getAutor().getId(), p.getAutor().getNombreArtista(), p.getTitulo(), p.getImagenUrl());
+            throw ApiException.conflict("MARCA_EN_PROCESO", "Estamos preparando la imagen. Intenta de nuevo en unos segundos");
+        }
+        return new DescargaResponse(storageService.urlDescarga(p.getMarcaAguaRuta(), nombreDescarga(p.getTitulo())));
+    }
+
+    private String nombreDescarga(String titulo) {
+        String base = Normalizer.normalize(titulo, Normalizer.Form.NFD).replaceAll("\\p{M}", "")
+                .toLowerCase(Locale.ROOT).replaceAll("[^a-z0-9]+", "-").replaceAll("^-|-$", "");
+        return (base.isEmpty() ? "obra" : base) + "-artagram.jpg";
     }
 
     public Page<PublicacionDto> listarPorArtista(UUID autorId, int pagina, int tamano, UUID usuarioActualId) {

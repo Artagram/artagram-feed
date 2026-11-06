@@ -19,11 +19,12 @@ public class FeedEventPublisher {
         this.rabbitTemplate = rabbitTemplate;
     }
 
-    public void publicarPostPublicado(UUID publicacionId, UUID autorId, String titulo, String imagenUrl) {
+    public void publicarPostPublicado(UUID publicacionId, UUID autorId, String autorNombre, String titulo, String imagenUrl) {
         Map<String, Object> evento = Map.of(
                 "tipo", "POST_PUBLICADO",
                 "publicacionId", publicacionId.toString(),
                 "autorId", autorId.toString(),
+                "autorNombre", autorNombre != null ? autorNombre : "artista",
                 "titulo", titulo,
                 "imagenUrl", imagenUrl,
                 "timestamp", Instant.now().toString()
