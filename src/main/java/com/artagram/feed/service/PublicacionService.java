@@ -72,18 +72,17 @@ public class PublicacionService {
         } else if (tag != null && !tag.isBlank()) {
             posts = publicacionRepo.findByEtiqueta(tag.trim(), pageable);
         } else if ("populares".equalsIgnoreCase(orden)) {
-            posts = publicacionRepo.findAllByOrderByContadorLikesDescCreadoEnDesc(pageable);
+            posts = publicacionRepo.findByOcultaFalseOrderByContadorLikesDescCreadoEnDesc(pageable);
         } else {
-            posts = publicacionRepo.findAllByOrderByCreadoEnDesc(pageable);
+            posts = publicacionRepo.findByOcultaFalseOrderByCreadoEnDesc(pageable);
         }
 
         return posts.map(p -> aDto(p, usuarioActualId));
     }
 
     @Transactional
-    public PublicacionDto obtenerPorId(UUID id, UUID usuarioActualId) {
-        Publicacion p = publicacionRepo.findById(id)
-                .orElseThrow(() -> ApiException.notFound("PUBLICACION_NO_ENCONTRADA", "La publicación no existe"));
+    public PublicacionDto obtenerPorId(UUID id, UUID usuarioActualId, boolean esAdmin) {
+        Publicacion p = buscarVisible(id, usuarioActualId, esAdmin);
         p.setContadorVistas(p.getContadorVistas() + 1);
         publicacionRepo.save(p);
         return aDto(p, usuarioActualId);
@@ -144,9 +143,8 @@ public class PublicacionService {
 
     /** Solo entrega la version marcada. Las obras que aun no la tienen se mandan a procesar. */
     @Transactional(readOnly = true)
-    public DescargaResponse urlDescarga(UUID publicacionId) {
-        Publicacion p = publicacionRepo.findById(publicacionId)
-                .orElseThrow(() -> ApiException.notFound("PUBLICACION_NO_ENCONTRADA", "La publicación no existe"));
+    public DescargaResponse urlDescarga(UUID publicacionId, UUID usuarioId, boolean esAdmin) {
+        Publicacion p = buscarVisible(publicacionId, usuarioId, esAdmin);
         if (p.getMarcaAguaRuta() == null) {
             eventPublisher.publicarPostPublicado(p.getId(), p.getAutor().getId(), p.getAutor().getNombreArtista(), p.getTitulo(), p.getImagenUrl());
             throw ApiException.conflict("MARCA_EN_PROCESO", "Estamos preparando la imagen. Intenta de nuevo en unos segundos");
@@ -160,13 +158,19 @@ public class PublicacionService {
         return (base.isEmpty() ? "obra" : base) + "-artagram.jpg";
     }
 
-    public Page<PublicacionDto> listarPorArtista(UUID autorId, int pagina, int tamano, UUID usuarioActualId) {
-        return publicacionRepo.findByAutorIdOrderByCreadoEnDesc(autorId, PageRequest.of(pagina, tamano))
-                .map(p -> aDto(p, usuarioActualId));
+    public Page<PublicacionDto> listarPorArtista(UUID autorId, int pagina, int tamano, UUID usuarioActualId, boolean esAdmin) {
+        Pageable pageable = PageRequest.of(pagina, tamano);
+        Page<Publicacion> posts = esAdmin || autorId.equals(usuarioActualId)
+                ? publicacionRepo.findByAutorIdOrderByCreadoEnDesc(autorId, pageable)
+                : publicacionRepo.findByAutorIdAndOcultaFalseOrderByCreadoEnDesc(autorId, pageable);
+        return posts.map(p -> aDto(p, usuarioActualId));
     }
 
-    public List<PublicacionDto> listarDestacadas(UUID autorId, UUID usuarioActualId) {
-        return publicacionRepo.findByAutorIdAndDestacadaTrueOrderByDestacadaEnDesc(autorId).stream()
+    public List<PublicacionDto> listarDestacadas(UUID autorId, UUID usuarioActualId, boolean esAdmin) {
+        List<Publicacion> destacadas = esAdmin || autorId.equals(usuarioActualId)
+                ? publicacionRepo.findByAutorIdAndDestacadaTrueOrderByDestacadaEnDesc(autorId)
+                : publicacionRepo.findByAutorIdAndDestacadaTrueAndOcultaFalseOrderByDestacadaEnDesc(autorId);
+        return destacadas.stream()
                 .map(p -> aDto(p, usuarioActualId))
                 .toList();
     }
@@ -190,6 +194,13 @@ public class PublicacionService {
             p = publicacionRepo.save(p);
         }
         return aDto(p, usuarioId);
+    }
+
+    /** Una obra oculta solo existe para su autor y para los administradores. */
+    private Publicacion buscarVisible(UUID publicacionId, UUID usuarioId, boolean esAdmin) {
+        return publicacionRepo.findById(publicacionId)
+                .filter(p -> !p.isOculta() || esAdmin || p.getAutor().getId().equals(usuarioId))
+                .orElseThrow(() -> ApiException.notFound("PUBLICACION_NO_ENCONTRADA", "La publicación no existe"));
     }
 
     private Publicacion buscarPropia(UUID publicacionId, UUID usuarioId) {
@@ -228,7 +239,7 @@ public class PublicacionService {
     }
 
     public FeedResponse feedReciente(UUID usuarioActualId, int pagina, int tamano) {
-        Page<Publicacion> posts = publicacionRepo.findAllByOrderByCreadoEnDesc(PageRequest.of(pagina, tamano));
+        Page<Publicacion> posts = publicacionRepo.findByOcultaFalseOrderByCreadoEnDesc(PageRequest.of(pagina, tamano));
         List<PublicacionDto> dtos = posts.getContent().stream()
                 .map(p -> aDto(p, usuarioActualId))
                 .toList();
@@ -242,7 +253,7 @@ public class PublicacionService {
         }
 
         Pageable pageable = PageRequest.of(pagina, tamano);
-        Page<Publicacion> posts = publicacionRepo.findByAutorIdInOrderByCreadoEnDesc(seguidosIds, pageable);
+        Page<Publicacion> posts = publicacionRepo.findByAutorIdInAndOcultaFalseOrderByCreadoEnDesc(seguidosIds, pageable);
 
         List<PublicacionDto> dtos = posts.getContent().stream()
                 .map(p -> aDto(p, usuarioId))
@@ -253,7 +264,7 @@ public class PublicacionService {
 
     public FeedResponse feedExplorar(UUID usuarioActualId, int pagina, int tamano) {
         Pageable pageable = PageRequest.of(pagina, tamano);
-        Page<Publicacion> posts = publicacionRepo.findAllByOrderByContadorLikesDescCreadoEnDesc(pageable);
+        Page<Publicacion> posts = publicacionRepo.findByOcultaFalseOrderByContadorLikesDescCreadoEnDesc(pageable);
         List<PublicacionDto> dtos = posts.getContent().stream()
                 .map(p -> aDto(p, usuarioActualId))
                 .toList();
@@ -293,7 +304,8 @@ public class PublicacionService {
                 p.getContadorComentarios(),
                 p.getVersion(),
                 p.getActualizadoEn() != null ? p.getActualizadoEn().toString() : null,
-                p.isDestacada()
+                p.isDestacada(),
+                p.isOculta()
         );
     }
 }

@@ -62,6 +62,9 @@ public class Publicacion {
     @Column(name = "destacada_en")
     private Instant destacadaEn;
 
+    @Column(nullable = false)
+    private boolean oculta = false;
+
     @Version
     @Column(nullable = false)
     private int version;
@@ -115,6 +118,8 @@ public class Publicacion {
     public void setContadorComentarios(int contadorComentarios) { this.contadorComentarios = Math.max(0, contadorComentarios); }
     public int getContadorVistas() { return contadorVistas; }
     public void setContadorVistas(int contadorVistas) { this.contadorVistas = contadorVistas; }
+    public boolean isOculta() { return oculta; }
+    public void setOculta(boolean oculta) { this.oculta = oculta; }
     public boolean isDestacada() { return destacada; }
 
     public void destacar() {

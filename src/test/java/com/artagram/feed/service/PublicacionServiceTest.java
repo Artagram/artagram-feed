@@ -159,14 +159,14 @@ class PublicacionServiceTest {
         p.setMarcaAguaRuta("marcadas/x.jpg");
         when(storageService.urlDescarga("marcadas/x.jpg", "atardecer-en-canon-artagram.jpg")).thenReturn("https://s3/firmada");
 
-        assertThat(service.urlDescarga(p.getId()).url()).isEqualTo("https://s3/firmada");
+        assertThat(service.urlDescarga(p.getId(), null, false).url()).isEqualTo("https://s3/firmada");
     }
 
     @Test
     void unaObraSinMarcaSeProcesaYNuncaEntregaElOriginal() {
         Publicacion p = obraDe(UUID.randomUUID());
 
-        assertThatThrownBy(() -> service.urlDescarga(p.getId()))
+        assertThatThrownBy(() -> service.urlDescarga(p.getId(), null, false))
                 .isInstanceOfSatisfying(ApiException.class, e -> assertThat(e.getCodigo()).isEqualTo("MARCA_EN_PROCESO"));
         verify(eventPublisher).publicarPostPublicado(p.getId(), p.getAutor().getId(), p.getAutor().getNombreArtista(), "Obra", "o.jpg");
         verify(storageService, never()).urlDescarga(any(), any());
@@ -181,5 +181,18 @@ class PublicacionServiceTest {
 
         p.setMarcaAguaRuta("marcadas/x.jpg");
         assertThat(service.aDto(p, null).obraFinalUrl()).isEqualTo("/media/marcadas/x.jpg");
+    }
+
+    @Test
+    void unaObraOcultaSoloExisteParaSuAutorYParaElAdmin() {
+        UUID autorId = UUID.randomUUID();
+        Publicacion p = obraDe(autorId);
+        p.setOculta(true);
+        when(publicacionRepo.save(p)).thenReturn(p);
+
+        assertThatThrownBy(() -> service.obtenerPorId(p.getId(), UUID.randomUUID(), false)).isInstanceOf(ApiException.class);
+        assertThatThrownBy(() -> service.urlDescarga(p.getId(), null, false)).isInstanceOf(ApiException.class);
+        assertThat(service.obtenerPorId(p.getId(), autorId, false).oculta()).isTrue();
+        assertThat(service.obtenerPorId(p.getId(), UUID.randomUUID(), true).oculta()).isTrue();
     }
 }

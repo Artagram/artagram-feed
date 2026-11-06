@@ -33,6 +33,19 @@ public class FeedEventPublisher {
         rabbitTemplate.convertAndSend(FeedRabbitMqConfig.EXCHANGE, "post.published", evento);
     }
 
+    public void publicarPostModerado(UUID publicacionId, UUID autorId, String titulo, String accion) {
+        Map<String, Object> evento = Map.of(
+                "tipo", "POST_MODERADO",
+                "publicacionId", publicacionId.toString(),
+                "autorId", autorId.toString(),
+                "titulo", titulo,
+                "accion", accion,
+                "timestamp", Instant.now().toString()
+        );
+        log.info("Publicando post.moderated para publicacionId={} accion={}", publicacionId, accion);
+        rabbitTemplate.convertAndSend(FeedRabbitMqConfig.EXCHANGE, "post.moderated", evento);
+    }
+
     public void publicarLikeModificado(UUID publicacionId, UUID usuarioId, UUID autorId, int contadorLikes, boolean meGusta) {
         Map<String, Object> evento = Map.of(
                 "tipo", "LIKES_ACTUALIZADOS",

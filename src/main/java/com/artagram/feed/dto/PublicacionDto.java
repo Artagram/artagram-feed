@@ -18,6 +18,7 @@ public record PublicacionDto(
         int contadorComentarios,
         int version,
         String editadoEn,
-        boolean destacada
+        boolean destacada,
+        boolean oculta
 ) {
 }

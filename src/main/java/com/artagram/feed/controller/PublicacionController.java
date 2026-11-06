@@ -10,6 +10,7 @@ import com.artagram.feed.service.SubidaPublicacionService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
@@ -55,8 +56,8 @@ public class PublicacionController {
 
     @GetMapping("/{id}")
     public ResponseEntity<PublicacionDto> obtenerPorId(@PathVariable UUID id, HttpServletRequest request) {
-        UUID usuarioId = userResolver.resolverOpcional(request).map(JwtUserResolver.UsuarioAutenticado::id).orElse(null);
-        return ResponseEntity.ok(publicacionService.obtenerPorId(id, usuarioId));
+        var usuario = userResolver.resolverOpcional(request);
+        return ResponseEntity.ok(publicacionService.obtenerPorId(id, idDe(usuario), esAdmin(usuario)));
     }
 
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
@@ -96,20 +97,20 @@ public class PublicacionController {
             @RequestParam(defaultValue = "0") int pagina,
             @RequestParam(defaultValue = "12") int tamano,
             HttpServletRequest request) {
-        UUID usuarioId = userResolver.resolverOpcional(request).map(JwtUserResolver.UsuarioAutenticado::id).orElse(null);
-        return ResponseEntity.ok(publicacionService.listarPorArtista(autorId, pagina, tamano, usuarioId));
+        var usuario = userResolver.resolverOpcional(request);
+        return ResponseEntity.ok(publicacionService.listarPorArtista(autorId, pagina, tamano, idDe(usuario), esAdmin(usuario)));
     }
 
     @GetMapping("/artista/{autorId}/destacadas")
     public ResponseEntity<List<PublicacionDto>> destacadas(@PathVariable UUID autorId, HttpServletRequest request) {
-        UUID usuarioId = userResolver.resolverOpcional(request).map(JwtUserResolver.UsuarioAutenticado::id).orElse(null);
-        return ResponseEntity.ok(publicacionService.listarDestacadas(autorId, usuarioId));
+        var usuario = userResolver.resolverOpcional(request);
+        return ResponseEntity.ok(publicacionService.listarDestacadas(autorId, idDe(usuario), esAdmin(usuario)));
     }
 
     @GetMapping("/{id}/descargar")
     public ResponseEntity<DescargaResponse> descargar(@PathVariable UUID id, HttpServletRequest request) {
-        userResolver.resolverRequerido(request);
-        return ResponseEntity.ok(publicacionService.urlDescarga(id));
+        var usuario = userResolver.resolverRequerido(request);
+        return ResponseEntity.ok(publicacionService.urlDescarga(id, usuario.id(), esAdmin(Optional.of(usuario))));
     }
 
     @PutMapping("/{id}/destacar")
@@ -128,5 +129,13 @@ public class PublicacionController {
     public ResponseEntity<LikeResponse> toggleLike(@PathVariable UUID id, HttpServletRequest request) {
         var usuario = userResolver.resolverRequerido(request);
         return ResponseEntity.ok(publicacionService.toggleLike(id, usuario.id()));
+    }
+
+    private UUID idDe(Optional<JwtUserResolver.UsuarioAutenticado> usuario) {
+        return usuario.map(JwtUserResolver.UsuarioAutenticado::id).orElse(null);
+    }
+
+    private boolean esAdmin(Optional<JwtUserResolver.UsuarioAutenticado> usuario) {
+        return usuario.map(JwtUserResolver.UsuarioAutenticado::roles).filter(r -> r.contains("ADMIN")).isPresent();
     }
 }
