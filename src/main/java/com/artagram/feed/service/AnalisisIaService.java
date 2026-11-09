@@ -46,7 +46,7 @@ public class AnalisisIaService {
         planService.consumirIa(usuarioId, premium);
 
         AnalisisIa pendiente = analisisRepo.findTopByPublicacionIdOrderByCreadoEnDesc(publicacionId)
-                .orElse(new AnalisisIa());
+                .orElseGet(() -> new AnalisisIa(null, p, "PENDIENTE", null, null, null, null, null, null));
         pendiente.setPublicacion(p);
         pendiente.setEstado("PENDIENTE");
         pendiente.setDiagnosticoGeneral("Análisis en proceso por el motor de visión artificial...");
