@@ -47,6 +47,7 @@ public class S3StorageProvider implements StorageProvider, AutoCloseable {
 
     public S3StorageProvider(
             @Value("${artagram.storage.endpoint:http://localhost:9000}") String endpoint,
+            @Value("${artagram.storage.public-endpoint:}") String publicEndpoint,
             @Value("${artagram.storage.region:us-east-1}") String regionName,
             @Value("${artagram.storage.bucket:artagram-uploads}") String bucket,
             @Value("${artagram.storage.access-key:minioadmin}") String accessKey,
@@ -64,6 +65,9 @@ public class S3StorageProvider implements StorageProvider, AutoCloseable {
                 .forcePathStyle(pathStyleAccess);
         if (endpoint != null && !endpoint.isBlank()) {
             clientBuilder.endpointOverride(URI.create(endpoint));
+            // Los S3 locales guardan literal el cuerpo firmado por bloques y la imagen
+            // queda dañada. En AWS real no hay endpoint y se sigue enviando por bloques.
+            clientBuilder.serviceConfiguration(S3Configuration.builder().chunkedEncodingEnabled(false).build());
         }
         this.s3Client = clientBuilder.build();
 
@@ -73,8 +77,10 @@ public class S3StorageProvider implements StorageProvider, AutoCloseable {
                 .serviceConfiguration(S3Configuration.builder()
                         .pathStyleAccessEnabled(pathStyleAccess)
                         .build());
-        if (endpoint != null && !endpoint.isBlank()) {
-            presignerBuilder.endpointOverride(URI.create(endpoint));
+        // Las URL firmadas las abre el navegador, que no conoce el host interno.
+        String endpointFirmado = publicEndpoint != null && !publicEndpoint.isBlank() ? publicEndpoint : endpoint;
+        if (endpointFirmado != null && !endpointFirmado.isBlank()) {
+            presignerBuilder.endpointOverride(URI.create(endpointFirmado));
         }
         this.s3Presigner = presignerBuilder.build();
 

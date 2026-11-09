@@ -46,6 +46,7 @@ artagram:
   storage:
     type: ${STORAGE_TYPE:s3}
     endpoint: ${S3_ENDPOINT:}
+    public-endpoint: ${S3_PUBLIC_ENDPOINT:}
     region: ${S3_REGION:us-east-1}
     bucket: ${S3_BUCKET:artagram-uploads}
     access-key: ${S3_ACCESS_KEY:minioadmin}

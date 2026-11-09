@@ -11,7 +11,7 @@ class S3StorageProviderTest {
 
     @Test
     void laUrlDeDescargaFuerzaElArchivoAdjunto() {
-        try (S3StorageProvider provider = new S3StorageProvider("http://127.0.0.1:1", "us-east-1", "bucket", "clave", "secreto", true)) {
+        try (S3StorageProvider provider = new S3StorageProvider("http://127.0.0.1:1", "", "us-east-1", "bucket", "clave", "secreto", true)) {
             String url = provider.urlPrefirmadaDescarga("marcadas/a.jpg", "obra-artagram.jpg", Duration.ofMinutes(5)).orElseThrow();
 
             assertThat(URLDecoder.decode(url, StandardCharsets.UTF_8))
