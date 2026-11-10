@@ -10,6 +10,7 @@ import com.artagram.feed.dto.SugerenciasEtiquetasRequest;
 import com.artagram.feed.dto.SugerenciasEtiquetasResponse;
 import com.artagram.feed.events.FeedEventPublisher;
 import com.artagram.feed.ia.GroqClient;
+import com.artagram.feed.storage.StorageService;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.ArrayList;
@@ -46,19 +47,22 @@ public class AnalisisIaService {
     private final PlanService planService;
     private final GroqClient groq;
     private final ObjectMapper objectMapper;
+    private final StorageService storageService;
 
     public AnalisisIaService(AnalisisIaRepository analisisRepo,
                              PublicacionRepository publicacionRepo,
                              FeedEventPublisher eventPublisher,
                              PlanService planService,
                              GroqClient groq,
-                             ObjectMapper objectMapper) {
+                             ObjectMapper objectMapper,
+                             StorageService storageService) {
         this.analisisRepo = analisisRepo;
         this.publicacionRepo = publicacionRepo;
         this.eventPublisher = eventPublisher;
         this.planService = planService;
         this.groq = groq;
         this.objectMapper = objectMapper;
+        this.storageService = storageService;
     }
 
     public AnalisisIaDto obtenerAnalisis(UUID publicacionId) {
@@ -80,7 +84,9 @@ public class AnalisisIaService {
         pendiente.setDiagnosticoGeneral("Análisis en proceso por el motor de visión artificial...");
         pendiente = analisisRepo.save(pendiente);
 
-        eventPublisher.solicitarAnalisisIa(p.getId(), usuarioId, p.getImagenUrl(), p.getTitulo(), p.getDescripcion());
+        // La ruta guardada es la clave en S3; Groq necesita una URL que pueda descargar.
+        eventPublisher.solicitarAnalisisIa(p.getId(), usuarioId, storageService.urlLecturaExterna(p.getImagenUrl()),
+                p.getTitulo(), p.getDescripcion());
 
         return aDto(pendiente);
     }

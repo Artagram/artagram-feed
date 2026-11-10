@@ -22,6 +22,7 @@ import com.artagram.feed.dto.SugerenciasEtiquetasRequest;
 import com.artagram.feed.dto.SugerenciasEtiquetasResponse;
 import com.artagram.feed.events.FeedEventPublisher;
 import com.artagram.feed.ia.GroqClient;
+import com.artagram.feed.storage.StorageService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.Optional;
 import java.util.UUID;
@@ -38,6 +39,7 @@ class AnalisisIaServiceTest {
     private FeedEventPublisher eventos;
     private PlanService plan;
     private GroqClient groq;
+    private StorageService storage;
     private AnalisisIaService service;
 
     @BeforeEach
@@ -48,7 +50,8 @@ class AnalisisIaServiceTest {
         plan = mock(PlanService.class);
         groq = mock(GroqClient.class);
         when(groq.completarJsonConImagen(anyString(), anyString(), anyString(), anyInt(), anyDouble())).thenReturn(Optional.empty());
-        service = new AnalisisIaService(analisis, publicaciones, eventos, plan, groq, new ObjectMapper());
+        storage = mock(StorageService.class);
+        service = new AnalisisIaService(analisis, publicaciones, eventos, plan, groq, new ObjectMapper(), storage);
     }
 
     @Test
@@ -62,6 +65,21 @@ class AnalisisIaServiceTest {
         ArgumentCaptor<AnalisisIa> guardado = ArgumentCaptor.forClass(AnalisisIa.class);
         verify(analisis).save(guardado.capture());
         assertThat(guardado.getValue().getId()).isNotNull();
+    }
+
+    @Test
+    void elAnalisisSeEncolaConUnaUrlQueLaIaPuedeDescargar() {
+        Publicacion obra = mock(Publicacion.class);
+        when(obra.getId()).thenReturn(publicacionId);
+        when(obra.getImagenUrl()).thenReturn("publicaciones/obra.png");
+        when(publicaciones.findById(publicacionId)).thenReturn(Optional.of(obra));
+        when(analisis.findTopByPublicacionIdOrderByCreadoEnDesc(publicacionId)).thenReturn(Optional.empty());
+        when(analisis.save(any())).thenAnswer(invocacion -> invocacion.getArgument(0));
+        when(storage.urlLecturaExterna("publicaciones/obra.png")).thenReturn("https://s3/firmada");
+
+        service.solicitarAnalisis(publicacionId, usuarioId, false);
+
+        verify(eventos).solicitarAnalisisIa(eq(publicacionId), eq(usuarioId), eq("https://s3/firmada"), any(), any());
     }
 
     @Test

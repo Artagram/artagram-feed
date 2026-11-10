@@ -79,6 +79,20 @@ public class StorageService {
                 .orElseGet(() -> resolverUrlPublica(ruta));
     }
 
+    /**
+     * URL que un servicio de fuera (Groq) puede descargar. En AWS la ruta publica es
+     * relativa (/media/...), asi que se firma una URL temporal de S3.
+     */
+    public String urlLecturaExterna(String ruta) {
+        if (ruta == null || ruta.isBlank()) return null;
+        if (ruta.startsWith("http://") || ruta.startsWith("https://")) {
+            return ruta;
+        }
+        String clave = ruta.startsWith("/media/") ? ruta.substring("/media/".length()) : ruta;
+        return provider.urlPrefirmadaLectura(clave, Duration.ofMinutes(30))
+                .orElseGet(() -> resolverUrlPublica(clave));
+    }
+
     public String resolverUrlPublica(String ruta) {
         if (ruta == null || ruta.isBlank()) return null;
         if (ruta.startsWith("http://") || ruta.startsWith("https://")) {
