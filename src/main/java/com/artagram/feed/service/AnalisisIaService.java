@@ -9,28 +9,56 @@ import com.artagram.feed.dto.AnalisisIaDto;
 import com.artagram.feed.dto.SugerenciasEtiquetasRequest;
 import com.artagram.feed.dto.SugerenciasEtiquetasResponse;
 import com.artagram.feed.events.FeedEventPublisher;
+import com.artagram.feed.ia.GroqClient;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class AnalisisIaService {
 
+    private static final Logger log = LoggerFactory.getLogger(AnalisisIaService.class);
+
+    // Mismo pedido que hacia el backend anterior a la migracion (SugerenciaEtiquetasEstrategia).
+    private static final String SISTEMA_SUGERENCIAS = "Eres un curador de arte digital y redactor de portafolios artísticos.";
+    private static final String INSTRUCCION_SUGERENCIAS = """
+            Observa esta ilustración y genera en español un título evocador, una descripción artística corta y 4 a 6 etiquetas relevantes.
+            Responde EXCLUSIVAMENTE con un JSON con esta estructura:
+            {
+              "tituloSugerido": "Título sugerido...",
+              "descripcionSugerida": "Descripción de la obra...",
+              "etiquetas": ["estilo", "tecnica", "tema"]
+            }
+            """;
+    private static final int MAX_ETIQUETAS = 6;
+
     private final AnalisisIaRepository analisisRepo;
     private final PublicacionRepository publicacionRepo;
     private final FeedEventPublisher eventPublisher;
     private final PlanService planService;
+    private final GroqClient groq;
+    private final ObjectMapper objectMapper;
 
     public AnalisisIaService(AnalisisIaRepository analisisRepo,
                              PublicacionRepository publicacionRepo,
                              FeedEventPublisher eventPublisher,
-                             PlanService planService) {
+                             PlanService planService,
+                             GroqClient groq,
+                             ObjectMapper objectMapper) {
         this.analisisRepo = analisisRepo;
         this.publicacionRepo = publicacionRepo;
         this.eventPublisher = eventPublisher;
         this.planService = planService;
+        this.groq = groq;
+        this.objectMapper = objectMapper;
     }
 
     public AnalisisIaDto obtenerAnalisis(UUID publicacionId) {
@@ -59,6 +87,59 @@ public class AnalisisIaService {
 
     public SugerenciasEtiquetasResponse sugerirEtiquetas(SugerenciasEtiquetasRequest req, UUID usuarioId, boolean premium) {
         planService.consumirIa(usuarioId, premium);
+        SugerenciasEtiquetasResponse respaldo = sugerenciaDeRespaldo(req);
+        return groq.completarJsonConImagen(SISTEMA_SUGERENCIAS, INSTRUCCION_SUGERENCIAS,
+                        aDataUri(req.imagenBase64()), 350, 0.4)
+                .flatMap(json -> leerSugerencia(json, respaldo))
+                .orElse(respaldo);
+    }
+
+    /** Lo que falte en la respuesta de la IA se completa con la sugerencia de respaldo. */
+    private Optional<SugerenciasEtiquetasResponse> leerSugerencia(String contenido, SugerenciasEtiquetasResponse respaldo) {
+        int inicio = contenido.indexOf('{');
+        int fin = contenido.lastIndexOf('}');
+        if (inicio < 0 || fin <= inicio) {
+            log.warn("La IA no devolvio un JSON de sugerencias");
+            return Optional.empty();
+        }
+        try {
+            JsonNode nodo = objectMapper.readTree(contenido.substring(inicio, fin + 1));
+            String titulo = nodo.path("tituloSugerido").asText("").trim();
+            String descripcion = nodo.path("descripcionSugerida").asText("").trim();
+            List<String> etiquetas = new ArrayList<>();
+            for (JsonNode etiqueta : nodo.path("etiquetas")) {
+                String limpia = etiqueta.asText("").trim().replaceFirst("^#+", "").trim();
+                if (!limpia.isEmpty() && !etiquetas.contains(limpia) && etiquetas.size() < MAX_ETIQUETAS) {
+                    etiquetas.add(limpia);
+                }
+            }
+            if (titulo.isEmpty() && descripcion.isEmpty() && etiquetas.isEmpty()) {
+                return Optional.empty();
+            }
+            return Optional.of(new SugerenciasEtiquetasResponse(
+                    titulo.isEmpty() ? respaldo.tituloSugerido() : titulo,
+                    descripcion.isEmpty() ? respaldo.descripcionSugerida() : descripcion,
+                    etiquetas.isEmpty() ? respaldo.etiquetas() : etiquetas));
+        } catch (Exception ex) {
+            log.warn("La IA no devolvio el formato de sugerencias esperado: {}", ex.getMessage());
+            return Optional.empty();
+        }
+    }
+
+    /** El frontend manda el base64 sin el prefijo data:, asi que el tipo se deduce de la firma. */
+    static String aDataUri(String imagen) {
+        if (imagen.startsWith("data:")) {
+            return imagen;
+        }
+        String tipo = imagen.startsWith("/9j/") ? "image/jpeg"
+                : imagen.startsWith("R0lGOD") ? "image/gif"
+                : imagen.startsWith("UklGR") ? "image/webp"
+                : "image/png";
+        return "data:" + tipo + ";base64," + imagen;
+    }
+
+    /** Respuesta sin IA: se usa si Groq no esta configurado, falla o responde algo ilegible. */
+    private SugerenciasEtiquetasResponse sugerenciaDeRespaldo(SugerenciasEtiquetasRequest req) {
         String base = (req.tituloBorrador() != null ? req.tituloBorrador() : "").toLowerCase();
         List<String> tags;
         if (base.contains("acuarela") || base.contains("jardin")) {

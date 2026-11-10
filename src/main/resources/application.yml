@@ -53,6 +53,9 @@ artagram:
     secret-key: ${S3_SECRET_KEY:minioadmin}
     path-style-access: ${S3_PATH_STYLE:true}
     local-dir: ${STORAGE_LOCAL_DIR:uploads}
+  ia:
+    groq-api-key: ${GROQ_API_KEY:}
+    groq-model: ${GROQ_MODEL:qwen/qwen3.8-27b}
 
 management:
   endpoints:
