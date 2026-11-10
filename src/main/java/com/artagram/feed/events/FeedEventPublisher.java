@@ -19,11 +19,12 @@ public class FeedEventPublisher {
         this.rabbitTemplate = rabbitTemplate;
     }
 
-    public void publicarPostPublicado(UUID publicacionId, UUID autorId, String titulo, String imagenUrl) {
+    public void publicarPostPublicado(UUID publicacionId, UUID autorId, String autorNombre, String titulo, String imagenUrl) {
         Map<String, Object> evento = Map.of(
                 "tipo", "POST_PUBLICADO",
                 "publicacionId", publicacionId.toString(),
                 "autorId", autorId.toString(),
+                "autorNombre", autorNombre != null ? autorNombre : "artista",
                 "titulo", titulo,
                 "imagenUrl", imagenUrl,
                 "timestamp", Instant.now().toString()
@@ -32,11 +33,25 @@ public class FeedEventPublisher {
         rabbitTemplate.convertAndSend(FeedRabbitMqConfig.EXCHANGE, "post.published", evento);
     }
 
-    public void publicarLikeModificado(UUID publicacionId, UUID usuarioId, UUID autorId, int contadorLikes, boolean meGusta) {
+    public void publicarPostModerado(UUID publicacionId, UUID autorId, String titulo, String accion) {
+        Map<String, Object> evento = Map.of(
+                "tipo", "POST_MODERADO",
+                "publicacionId", publicacionId.toString(),
+                "autorId", autorId.toString(),
+                "titulo", titulo,
+                "accion", accion,
+                "timestamp", Instant.now().toString()
+        );
+        log.info("Publicando post.moderated para publicacionId={} accion={}", publicacionId, accion);
+        rabbitTemplate.convertAndSend(FeedRabbitMqConfig.EXCHANGE, "post.moderated", evento);
+    }
+
+    public void publicarLikeModificado(UUID publicacionId, UUID usuarioId, String usuarioNombre, UUID autorId, int contadorLikes, boolean meGusta) {
         Map<String, Object> evento = Map.of(
                 "tipo", "LIKES_ACTUALIZADOS",
                 "publicacionId", publicacionId.toString(),
                 "usuarioId", usuarioId.toString(),
+                "usuarioNombre", usuarioNombre != null ? usuarioNombre : "Un artista",
                 "autorId", autorId.toString(),
                 "contadorLikes", contadorLikes,
                 "meGusta", meGusta,

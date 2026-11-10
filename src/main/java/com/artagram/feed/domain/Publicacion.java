@@ -44,6 +44,9 @@ public class Publicacion {
     @Column(length = 100)
     private String blurhash;
 
+    @Column(name = "marca_agua_ruta", length = 500)
+    private String marcaAguaRuta;
+
     @Column(name = "contador_likes", nullable = false)
     private int contadorLikes = 0;
 
@@ -52,6 +55,15 @@ public class Publicacion {
 
     @Column(name = "contador_vistas", nullable = false)
     private int contadorVistas = 0;
+
+    @Column(nullable = false)
+    private boolean destacada = false;
+
+    @Column(name = "destacada_en")
+    private Instant destacadaEn;
+
+    @Column(nullable = false)
+    private boolean oculta = false;
 
     @Version
     @Column(nullable = false)
@@ -98,12 +110,28 @@ public class Publicacion {
     public void setMiniaturaUrl(String miniaturaUrl) { this.miniaturaUrl = miniaturaUrl; }
     public String getBlurhash() { return blurhash; }
     public void setBlurhash(String blurhash) { this.blurhash = blurhash; }
+    public String getMarcaAguaRuta() { return marcaAguaRuta; }
+    public void setMarcaAguaRuta(String marcaAguaRuta) { this.marcaAguaRuta = marcaAguaRuta; }
     public int getContadorLikes() { return contadorLikes; }
     public void setContadorLikes(int contadorLikes) { this.contadorLikes = Math.max(0, contadorLikes); }
     public int getContadorComentarios() { return contadorComentarios; }
     public void setContadorComentarios(int contadorComentarios) { this.contadorComentarios = Math.max(0, contadorComentarios); }
     public int getContadorVistas() { return contadorVistas; }
     public void setContadorVistas(int contadorVistas) { this.contadorVistas = contadorVistas; }
+    public boolean isOculta() { return oculta; }
+    public void setOculta(boolean oculta) { this.oculta = oculta; }
+    public boolean isDestacada() { return destacada; }
+
+    public void destacar() {
+        this.destacada = true;
+        this.destacadaEn = Instant.now();
+    }
+
+    public void quitarDestacada() {
+        this.destacada = false;
+        this.destacadaEn = null;
+    }
+
     public int getVersion() { return version; }
     public Instant getCreadoEn() { return creadoEn; }
     public Instant getActualizadoEn() { return actualizadoEn; }

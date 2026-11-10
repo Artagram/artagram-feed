@@ -23,6 +23,15 @@ public class FeedController {
         this.userResolver = userResolver;
     }
 
+    @GetMapping
+    public ResponseEntity<FeedResponse> reciente(
+            @RequestParam(defaultValue = "0") int pagina,
+            @RequestParam(defaultValue = "10") int tamano,
+            HttpServletRequest request) {
+        UUID usuarioId = userResolver.resolverOpcional(request).map(JwtUserResolver.UsuarioAutenticado::id).orElse(null);
+        return ResponseEntity.ok(publicacionService.feedReciente(usuarioId, pagina, tamano));
+    }
+
     @GetMapping("/siguiendo")
     public ResponseEntity<FeedResponse> siguiendo(
             @RequestParam(defaultValue = "0") int pagina,

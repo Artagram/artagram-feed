@@ -18,11 +18,14 @@ public class StorageService {
 
     public StorageService(StorageProvider provider,
                           @Value("${artagram.storage.endpoint:http://localhost:9000}") String s3Endpoint,
+                          @Value("${artagram.storage.public-endpoint:}") String s3PublicEndpoint,
                           @Value("${artagram.storage.bucket:artagram-uploads}") String bucket,
                           @Value("${artagram.storage.type:s3}") String storageType) {
         this.provider = provider;
-        if ("s3".equalsIgnoreCase(storageType)) {
-            this.publicPrefix = s3Endpoint + "/" + bucket + "/";
+        // En AWS no se configura endpoint: las imagenes se sirven por /media/ desde este servicio.
+        if ("s3".equalsIgnoreCase(storageType) && s3Endpoint != null && !s3Endpoint.isBlank()) {
+            String base = s3PublicEndpoint != null && !s3PublicEndpoint.isBlank() ? s3PublicEndpoint : s3Endpoint;
+            this.publicPrefix = base + "/" + bucket + "/";
         } else {
             this.publicPrefix = "/media/";
         }
@@ -69,6 +72,11 @@ public class StorageService {
                 .orElse(publicPrefix + key);
         String publicUrl = publicPrefix + key;
         return new PresignResponse(uploadUrl, publicUrl, key);
+    }
+
+    public String urlDescarga(String ruta, String nombreArchivo) {
+        return provider.urlPrefirmadaDescarga(ruta, nombreArchivo, Duration.ofMinutes(5))
+                .orElseGet(() -> resolverUrlPublica(ruta));
     }
 
     public String resolverUrlPublica(String ruta) {

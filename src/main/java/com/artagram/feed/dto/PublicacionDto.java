@@ -17,6 +17,8 @@ public record PublicacionDto(
         String creadoEn,
         int contadorComentarios,
         int version,
-        String editadoEn
+        String editadoEn,
+        boolean destacada,
+        boolean oculta
 ) {
 }
