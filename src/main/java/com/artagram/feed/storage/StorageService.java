@@ -16,7 +16,9 @@ public class StorageService {
     private final StorageProvider provider;
     private final String publicPrefix;
 
-    public StorageService(StorageProvider provider,
+    // Disk y S3 son excluyentes (@ConditionalOnProperty artagram.storage.type):
+    // en ejecución solo existe uno de los dos beans.
+    public StorageService(StorageProvider provider, // NOSONAR java:S9352
                           @Value("${artagram.storage.endpoint:http://localhost:9000}") String s3Endpoint,
                           @Value("${artagram.storage.public-endpoint:}") String s3PublicEndpoint,
                           @Value("${artagram.storage.bucket:artagram-uploads}") String bucket,

@@ -1,5 +1,6 @@
 package com.artagram.feed.storage;
 
+import com.artagram.feed.common.ApiException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
@@ -44,6 +45,11 @@ public class DiskStorageProvider implements StorageProvider {
     }
 
     private Path resolver(String ruta) {
-        return root.resolve(ruta).normalize();
+        Path destino = root.resolve(ruta).normalize();
+        // Evita path traversal: "../" no puede salir del directorio de almacenamiento.
+        if (!destino.startsWith(root)) {
+            throw ApiException.badRequest("RUTA_INVALIDA", "Ruta fuera del directorio de almacenamiento");
+        }
+        return destino;
     }
 }

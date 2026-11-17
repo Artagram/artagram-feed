@@ -154,7 +154,7 @@ public class PublicacionService {
 
     private String nombreDescarga(String titulo) {
         String base = Normalizer.normalize(titulo, Normalizer.Form.NFD).replaceAll("\\p{M}", "")
-                .toLowerCase(Locale.ROOT).replaceAll("[^a-z0-9]+", "-").replaceAll("^-|-$", "");
+                .toLowerCase(Locale.ROOT).replaceAll("[^a-z0-9]+", "-").replaceAll("(^-)|(-$)", "");
         return (base.isEmpty() ? "obra" : base) + "-artagram.jpg";
     }
 

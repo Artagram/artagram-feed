@@ -35,14 +35,21 @@ public class MediaController {
     @GetMapping("/media/**")
     public ResponseEntity<Resource> servirMedia(HttpServletRequest request) {
         String path = request.getRequestURI().substring("/media/".length());
+        String contentType = tipoContenido(path);
         Resource recurso = storageService.leer(path);
-
-        String contentType = MediaType.IMAGE_JPEG_VALUE;
-        if (path.endsWith(".png")) contentType = MediaType.IMAGE_PNG_VALUE;
-        else if (path.endsWith(".webp")) contentType = "image/webp";
 
         return ResponseEntity.ok()
                 .header(HttpHeaders.CONTENT_TYPE, contentType)
                 .body(recurso);
+    }
+
+    private static String tipoContenido(String path) {
+        if (path.endsWith(".png")) {
+            return MediaType.IMAGE_PNG_VALUE;
+        }
+        if (path.endsWith(".webp")) {
+            return "image/webp";
+        }
+        return MediaType.IMAGE_JPEG_VALUE;
     }
 }
