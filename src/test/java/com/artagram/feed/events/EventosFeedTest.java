@@ -156,7 +156,10 @@ class EventosFeedTest {
         assertThat(bindings).hasSize(7).extracting(Binding::getRoutingKey).contains("user.registered", "ai.completed");
 
         var id = new SeguidorProyeccion(a, b).getId();
-        assertThat(id).isEqualTo(new SeguidorProyeccion.SeguidorId(a, b)).isEqualTo(id).isNotEqualTo("x")
+        Object otroTipo = "x";
+        assertThat(id.equals(id)).isTrue();
+        assertThat(id.equals(otroTipo)).isFalse();
+        assertThat(id).isEqualTo(new SeguidorProyeccion.SeguidorId(a, b))
                 .isNotEqualTo(new SeguidorProyeccion.SeguidorId(b, a));
         assertThat(id.hashCode()).isEqualTo(new SeguidorProyeccion.SeguidorId(a, b).hashCode());
         assertThat(id.getSeguidorId()).isEqualTo(a);
