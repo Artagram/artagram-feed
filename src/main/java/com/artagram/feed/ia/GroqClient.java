@@ -34,10 +34,14 @@ public class GroqClient {
     public GroqClient(@Value("${artagram.ia.groq-api-key:}") String apiKey,
                       @Value("${artagram.ia.groq-model:qwen/qwen3.8-27b}") String model,
                       ObjectMapper objectMapper) {
+        this(apiKey, model, objectMapper, HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(10)).build());
+    }
+
+    GroqClient(String apiKey, String model, ObjectMapper objectMapper, HttpClient http) {
         this.apiKey = apiKey;
         this.model = model;
         this.objectMapper = objectMapper;
-        this.http = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(10)).build();
+        this.http = http;
     }
 
     /** Contenido de la respuesta del modelo, o vacio si no hay clave o Groq falla. */
